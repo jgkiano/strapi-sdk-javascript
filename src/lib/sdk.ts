@@ -426,10 +426,10 @@ export default class Strapi {
   /**
    * Convert nested objects to query strings
    */
-  private stringify(data): string {
-    function _stringify(data, pre = '') {
+  private stringify(query: { [key: string]: any }): string {
+    function _stringify(q: { [key: string]: any }, pre = '') {
       let str = pre + '';
-      for (const [key, value] of Object.entries(data)) {
+      for (const [key, value] of Object.entries(q)) {
         if (typeof value === 'object') {
           str = str + _stringify(value, key);
         } else if (pre) {
@@ -440,7 +440,7 @@ export default class Strapi {
       }
       return str;
     }
-    const result = _stringify(data).split('');
+    const result = _stringify(query).split('');
     const last = result[result.length - 1];
     if (last === '&') {
       result.pop();
