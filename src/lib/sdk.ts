@@ -66,9 +66,11 @@ export default class Strapi {
       if (this.storeConfig.cookie) {
         existingToken = Cookies.get(this.storeConfig.cookie.key);
       } else if (this.storeConfig.localStorage) {
-        existingToken = JSON.parse(window.localStorage.getItem(
-          this.storeConfig.localStorage.key
-        ) as string);
+        existingToken = JSON.parse(
+          window.localStorage.getItem(
+            this.storeConfig.localStorage.key
+          ) as string
+        );
       }
       if (existingToken) {
         this.setToken(existingToken, true);
@@ -232,13 +234,18 @@ export default class Strapi {
    * @param contentTypePluralized
    * @param params Filter and order queries.
    */
-  public getEntries(
-    contentTypePluralized: string,
-    params?: AxiosRequestConfig['params']
-  ): Promise<object[]> {
-    return this.request('get', `/${contentTypePluralized}`, {
-      params
-    });
+  public async getEntries<T, Q>(
+    contentTypePluralized: Q,
+    query: T
+  ): Promise<T[]> {
+    try {
+      const response = await this.axios.get<T[]>(
+        `/${contentTypePluralized}?${this.stringify(query)}`
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   /**
@@ -414,5 +421,30 @@ export default class Strapi {
    */
   private isBrowser(): boolean {
     return typeof window !== 'undefined';
+  }
+
+  /**
+   * Convert nested objects to query strings
+   */
+  private stringify(query: { [key: string]: any }): string {
+    function _stringify(q: { [key: string]: any }, pre = '') {
+      let str = pre + '';
+      for (const [key, value] of Object.entries(q)) {
+        if (typeof value === 'object') {
+          str = str + _stringify(value, key);
+        } else if (pre) {
+          str = pre + '.' + key + '=' + value + '&';
+        } else {
+          str = str + key + '=' + value + '&';
+        }
+      }
+      return str;
+    }
+    const result = _stringify(query).split('');
+    const last = result[result.length - 1];
+    if (last === '&') {
+      result.pop();
+    }
+    return result.join('');
   }
 }
